@@ -1,0 +1,43 @@
+artifact "Magnet"
+---
+artifact "Magnet" property "name" "magnet" property "color" "red"
+---
+filter artifacts "Magnet" and near position 10 20 30
+---
+time 10:30
+---
+send delay 5 "Hello" to filter artifacts "Magnet"
+---
+send time 10:30 to filter artifacts "Timer" and in channel "facilitator"
+---
+time 10:30; state on; flow start
+---
+while filter all send state on
+---
+while filter all send ( state on; flow start; break ) 
+---
+listen ( state on or flow activate ) do ( flow start; media folder "Presentation" 2; time 10:00 )
+---
+filter with property "name" is "magnet" and in channel "red"
+---
+send ( state on; flow start ) to filter with property "name" is "magnet" and in channel "red"
+---
+send (
+    state on;
+    flow start
+) 
+to filter
+    with property "name" = "magnet"
+    and
+    in channel "red"
+---
+repeat 10
+    send
+        delay 3:30 
+        ( 
+            state on;
+            flow start
+        )
+    to filter
+        lost
+        and on plane "facilitator"

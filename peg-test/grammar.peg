@@ -1,0 +1,80 @@
+program := mexpression
+
+SPACE := '\s+'
+SEPARATOR := ';'
+numerical := numerical={'(-)?[0-9]+(\.[0-9]+)?' | 'same'}
+text   := {'text' SPACE}?  text={'"[^"]*"'}
+time   := 'time' SPACE minutes=numerical seconds={ {SPACE|':'} seconds=numerical}?
+
+state  := 'state' SPACE state={ 'on' | 'off' | 'reset' | text }
+flow   := 'flow' SPACE flow={ 'start' | 'stop' | 'next' | 'prev' | 'activate' }
+media  := 'media' SPACE folder=folder SPACE page=numerical
+folder := 'folder' SPACE folder=text
+
+scale := 'scale' SPACE scale=numerical
+rotation := 'rotation' SPACE yaw=numerical SPACE pitch=numerical SPACE roll=numerical
+position := 'position' SPACE position={
+    position={position=xyz params=position_op*} |
+    position={param=position_param params=position_op*}
+    }
+xyz := x=numerical SPACE y=numerical SPACE z=numerical
+position_op := SPACE param=position_param
+position_param := rotation={rotation} |
+    channel={channel} |
+    plane={plane} |
+    relative={position} |
+    filter={filter}
+
+channel := 'channel' SPACE channel={text | numerical}
+plane := 'plane' SPACE plane={text | numerical}
+
+filter := 'filter' SPACE filter=fexpression
+fex := 'self' | 'all' | 'lost' | 'all' |
+    in    ={'in'    SPACE channel=channel} |
+    on    ={'on'    SPACE plane=plane} |
+    near  ={'near'  SPACE position=position distance={SPACE distance=distance}?} |
+    near  ={'near'  SPACE filter=fexpression distance={SPACE distance=distance}?} |
+    first ={'first' SPACE filter=fexpression count={SPACE count=count}?} |
+    last  ={'last'  SPACE filter=fexpression count={SPACE count=count}?} |
+    artifacts={'artifacts' SPACE artifact={artifact=text} {SPACE filter=fexpression}?} |
+    avatars={'avatars' SPACE filter=fexpression} |
+    property={'with' SPACE 'property' SPACE name=text SPACE property_op SPACE value=mexpression}
+distance := 'distance' SPACE count=numerical
+count := 'count' SPACE count=numerical
+fexpression := 
+    fex=fexpression SPACE op=fex_binary_op |
+    fex=fex_unary_op |
+    '\(' SPACE? fex=fexpression SPACE? '\)' |
+    fex
+fex_binary_op := op={'or'|'and'} SPACE fex=fexpression
+fex_unary_op :=  op={'not'} SPACE fex=fexpression
+property_op := op={'is'|'is not'|'not is'|'='|'<'|'<='|'>'|'>='|'<>'|'!='}
+
+artifact := 'artifact' SPACE artifact=text properties={SPACE property=property}*
+property := 'property' SPACE name=text value={ SPACE value=mexpression }?
+
+send := 'send' delay={SPACE 'delay' SPACE minutes=numerical seconds={ {SPACE|':'} seconds=numerical}?}? SPACE message=mexpression filter={ SPACE 'to' SPACE filter=filter}?
+cycle := condition={{'while' SPACE  filter=filter} | {'repeat' SPACE times=numerical}} SPACE send=send
+cycle_break := 'break'
+listen := 'listen' SPACE listen=lexpression SPACE 'do' SPACE do=mexpression 
+
+mexpression := 
+    message=mexpression SPACE? op=message_op |
+    '\(' SPACE? message=mexpression SPACE '\)' |
+    message
+lexpression := 
+    message=lexpression SPACE op=listen_op |
+    '\(' SPACE? message=lexpression SPACE '\)' |
+    message
+
+message_op := SEPARATOR SPACE message=mexpression
+listen_op  := op={'or'|'and'} SPACE message=lexpression
+message := numerical | text | time |
+           state | flow | 
+           media | folder | 
+           time |
+           position | rotation | scale | channel | plane |
+           filter | fex | fexpression |
+           artifact | property |
+           send | cycle | cycle_break | listen
+
